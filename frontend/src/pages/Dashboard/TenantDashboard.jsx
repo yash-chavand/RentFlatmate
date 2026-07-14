@@ -152,7 +152,7 @@ export const TenantDashboard = () => {
           <Card className="bg-gradient-to-br from-primary-900/10 to-indigo-900/5 border-primary-500/10">
             <h3 className="font-bold text-sm text-primary-800 dark:text-primary-400 mb-2">How it works</h3>
             <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed mb-4">
-              When you view a listing detail, RentSync automatically compares your tenant profile preferences (budget, location, and move-in date) with the owner's property configuration. We run an analysis using Gemini AI to score and break down matches!
+              When you view a listing detail, Rent Flatmate automatically compares your tenant profile preferences (budget, location, and move-in date) with the owner's property configuration. We run an analysis using Gemini AI to score and break down matches!
             </p>
             <Link to="/profile" className="text-xs text-primary-600 font-bold hover:underline dark:text-primary-400">
               Update Tenant Preferences →

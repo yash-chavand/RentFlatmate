@@ -64,7 +64,7 @@ ${text}
   }
 
   try {
-    const fromAddress = process.env.SMTP_FROM || '"RentSync Notifications" <no-reply@rentsync.local>';
+    const fromAddress = process.env.SMTP_FROM || '"Rent Flatmate Notifications" <no-reply@rentflatmate.local>';
     const info = await transporter.sendMail({
       from: fromAddress,
       to,

@@ -43,8 +43,8 @@ export const MainLayout = ({ children }) => {
           {/* Logo */}
           <div className="flex items-center gap-8">
             <Link to="/" className="flex items-center gap-2 text-xl font-bold tracking-tight text-primary-600 dark:text-primary-500">
-              <span className="bg-gradient-to-r from-primary-600 to-indigo-500 bg-clip-text text-transparent dark:from-primary-400 dark:to-indigo-400">
-                RentSync
+              <span className="bg-gradient-to-r from-pink-500 via-purple-500 via-indigo-500 to-cyan-500 bg-clip-text text-transparent font-black tracking-wider uppercase text-lg">
+                Rent Flatmate
               </span>
             </Link>
 

@@ -26,7 +26,7 @@ export const Landing = () => {
             </span>
           </h1>
           <p className="mt-6 text-lg leading-8 text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-            Calculate compatibility scores instantly. RentSync matches tenant preferences with listing features using Gemini AI, making flatmate hunting simple and stress-free.
+            Calculate compatibility scores instantly. Rent Flatmate matches tenant preferences with listing features using Gemini AI, making flatmate hunting simple and stress-free.
           </p>
           <div className="mt-10 flex items-center justify-center gap-x-6">
             <Link to="/listings">

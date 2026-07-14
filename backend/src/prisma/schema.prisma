@@ -1,0 +1,244 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  OWNER
+  TENANT
+  ADMIN
+}
+
+enum RoomType {
+  SINGLE
+  SHARED
+  STUDIO
+  ONE_BHK
+  TWO_BHK
+  OTHER
+}
+
+enum InterestStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  CANCELLED
+}
+
+enum ListingStatus {
+  AVAILABLE
+  FILLED
+  INACTIVE
+}
+
+enum NotificationType {
+  INTEREST_RECEIVED
+  INTEREST_ACCEPTED
+  INTEREST_REJECTED
+  HIGH_COMPATIBILITY
+  NEW_MESSAGE
+  SYSTEM
+}
+
+model User {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  email         String    @unique
+  password      String
+  role          Role
+  name          String
+  phone         String?
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  refreshTokens  RefreshToken[]
+  ownerProfile   OwnerProfile?
+  tenantProfile  TenantProfile?
+  notifications  Notification[]
+  sentMessages   Message[]        @relation("MessageSender")
+  adminLogs      AdminLog[]       @relation("AdminActor")
+
+  @@map("users")
+}
+
+// A refresh token is stored hashed so a stolen DB dump alone cannot be
+// replayed as a valid token. Storing it (instead of relying purely on JWT
+// statelessness) is what makes server-side logout / revocation possible.
+model RefreshToken {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String    @db.ObjectId
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash   String    @unique
+  expiresAt   DateTime
+  revokedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  replacedBy  String?
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+model OwnerProfile {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String   @unique @db.ObjectId
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bio         String?
+  govIdUrl    String?
+  createdAt   DateTime @default(now())
+
+  listings    Listing[]
+
+  @@map("owner_profiles")
+}
+
+model TenantProfile {
+  id                 String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId             String    @unique @db.ObjectId
+  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  preferredLocation  String
+  budgetMin          Int
+  budgetMax          Int
+  moveInDate         DateTime
+  roomTypePreference RoomType?
+  furnishedPref      Boolean?
+  bio                String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  compatibilities    Compatibility[]
+  interests          InterestRequest[]
+
+  @@map("tenant_profiles")
+}
+
+model Listing {
+  id             String        @id @default(auto()) @map("_id") @db.ObjectId
+  ownerProfileId String        @db.ObjectId
+  ownerProfile   OwnerProfile  @relation(fields: [ownerProfileId], references: [id], onDelete: Cascade)
+
+  title          String
+  description    String
+  location       String
+  rent           Int
+  deposit        Int           @default(0)
+  availableDate  DateTime
+  roomType       RoomType
+  furnished      Boolean       @default(false)
+  status         ListingStatus @default(AVAILABLE)
+
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  images         ListingImage[]
+  compatibilities Compatibility[]
+  interests      InterestRequest[]
+
+  @@index([location])
+  @@index([status])
+  @@map("listings")
+}
+
+model ListingImage {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  listingId  String   @db.ObjectId
+  listing    Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  url        String
+  publicId   String   // cloudinary public_id, needed for deletion
+  createdAt  DateTime @default(now())
+
+  @@map("listing_images")
+}
+
+model Compatibility {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  tenantProfileId String   @db.ObjectId
+  tenantProfile   TenantProfile @relation(fields: [tenantProfileId], references: [id], onDelete: Cascade)
+  listingId       String   @db.ObjectId
+  listing         Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  score           Int
+  explanation     String
+  pros            String[]
+  cons            String[]
+  source          String   // "GEMINI" | "FALLBACK"
+
+  createdAt       DateTime @default(now())
+
+  @@unique([tenantProfileId, listingId])
+  @@map("compatibilities")
+}
+
+model InterestRequest {
+  id              String         @id @default(auto()) @map("_id") @db.ObjectId
+  tenantProfileId String         @db.ObjectId
+  tenantProfile   TenantProfile  @relation(fields: [tenantProfileId], references: [id], onDelete: Cascade)
+  listingId       String         @db.ObjectId
+  listing         Listing        @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  status          InterestStatus @default(PENDING)
+  message         String?
+
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  chatRoom        ChatRoom?
+
+  @@unique([tenantProfileId, listingId])
+  @@map("interest_requests")
+}
+
+model ChatRoom {
+  id                String          @id @default(auto()) @map("_id") @db.ObjectId
+  interestRequestId String          @unique @db.ObjectId
+  interestRequest   InterestRequest @relation(fields: [interestRequestId], references: [id], onDelete: Cascade)
+  createdAt         DateTime        @default(now())
+
+  messages          Message[]
+
+  @@map("chat_rooms")
+}
+
+model Message {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  chatRoomId String   @db.ObjectId
+  chatRoom   ChatRoom @relation(fields: [chatRoomId], references: [id], onDelete: Cascade)
+  senderId   String   @db.ObjectId
+  sender     User     @relation("MessageSender", fields: [senderId], references: [id])
+  content    String
+  readAt     DateTime?
+  createdAt  DateTime @default(now())
+
+  @@index([chatRoomId])
+  @@map("messages")
+}
+
+model Notification {
+  id        String            @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String            @db.ObjectId
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  title     String
+  body      String
+  isRead    Boolean           @default(false)
+  metadata  Json?
+  createdAt DateTime          @default(now())
+
+  @@index([userId, isRead])
+  @@map("notifications")
+}
+
+model AdminLog {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  actorId   String   @db.ObjectId
+  actor     User     @relation("AdminActor", fields: [actorId], references: [id])
+  action    String
+  target    String
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@map("admin_logs")
+}

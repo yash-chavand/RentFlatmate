@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  db:
+    image: mongo:6.0-jammy
+    container_name: rentflatmate-db
+    restart: always
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+volumes:
+  mongo_data:
